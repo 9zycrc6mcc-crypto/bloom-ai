@@ -159,10 +159,17 @@ const state=JSON.parse(localStorage.getItem('nb-release')||'{"goal":2000,"protei
     window.pendingMealPhoto=null;
     render();$('addModal').close();$('foodName').value='';$('foodKcal').value='';applyDiaryFilter(category);toast('已加入'+mealLabels[category]+'。');
   }
+  const originalRender=render;
+  function renderHealthHabits(){
+    const habits=document.querySelectorAll('.habit');
+    if(habits[1])habits[1].querySelector('b').textContent=(state.steps||0).toLocaleString();
+    if(habits[2])habits[2].querySelector('b').textContent=(state.streak||0)+' 天';
+  }
+  render=function(){originalRender();renderHealthHabits();};
   persist=function(){localStorage.setItem(window.bloomStorageKey||'nb-release',JSON.stringify(state));};
   window.loadAccountData=function(user){
     const storageKey='bloom-account-'+user.uid;
-    const emptyState={goal:2000,protein:120,water:0,meals:[]};
+    const emptyState={goal:2000,protein:120,water:0,steps:0,streak:0,meals:[]};
     let savedState;
     try{savedState=JSON.parse(localStorage.getItem(storageKey)||'null');}catch(error){savedState=null;}
     const nextState=savedState&&Array.isArray(savedState.meals)?savedState:emptyState;
