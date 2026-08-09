@@ -205,8 +205,8 @@ const state=JSON.parse(localStorage.getItem('nb-release')||'{"goal":2000,"protei
     authGate.style.display=user?'none':'grid';
     profileGate.style.display='none';
     if(!user)return;
-    if(!localStorage.getItem('bloom-profile-'+user.uid)){profileGate.style.display='grid';return;}
     const accountCard=document.querySelector('#account article.card');
     if(accountCard){accountCard.querySelector('b').textContent=user.email||'Bloom 用戶';accountCard.querySelector('p').textContent='已登入 · 餐點紀錄目前儲存在此裝置';if(!document.getElementById('logoutButton')){const logoutButton=document.createElement('button');logoutButton.id='logoutButton';logoutButton.className='tiny';logoutButton.textContent='登出';logoutButton.onclick=()=>signOut(auth);accountCard.append(logoutButton);}}
+    if(!localStorage.getItem('bloom-profile-'+user.uid)){profileGate.style.display='grid';return;}
   });
 </script></body></html>
