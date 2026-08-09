@@ -77,7 +77,6 @@ const state=JSON.parse(localStorage.getItem('nb-release')||'{"goal":2000,"protei
     $('planFocus').textContent='依你的目標安排三餐';
     $('planTarget').textContent='今日合計 '+state.goal.toLocaleString()+' kcal · 蛋白質 '+state.protein+'g；共備有 14 組三餐可重新安排。';
     $('planList').innerHTML='<b>今天吃什麼</b>'+plan.map((value,mealIndex)=>{const [icon,main,drink]=value.split('|');return '<div class="meal"><div class="emoji">'+icon+'</div><div class="name"><b>'+mealNames[mealIndex]+' · '+main+'</b><small>搭配：'+drink+' · '+calories[mealIndex]+' kcal · 蛋白質 '+protein[mealIndex]+'g</small></div></div>';}).join('')+'<div class="metric"><span>今日建議合計</span><b>'+calories.reduce((a,b)=>a+b,0).toLocaleString()+' kcal · '+protein.reduce((a,b)=>a+b,0)+'g 蛋白質</b></div>';
-    if(planVersion>1)toast('已從 14 組方案中重新安排今天的三餐。');
   }
   function saveGoal(event){
     event.preventDefault();
