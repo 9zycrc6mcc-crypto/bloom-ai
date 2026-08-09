@@ -136,7 +136,7 @@ const state=JSON.parse(localStorage.getItem('nb-release')||'{"goal":2000,"protei
       const photoDataUrl=(await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(image.file)}));
       window.pendingMealPhoto=photoDataUrl;
       const base64=photoDataUrl.split(',')[1];
-      const response=await fetch('/.netlify/functions/analyze-meal',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({imageBase64:base64,mimeType:image.mimeType})});
+      const response=await fetch('/api/analyze-meal',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({imageBase64:base64,mimeType:image.mimeType})});
       const analysis=await response.json();
       if(!response.ok)throw new Error(analysis.error);
       const first=analysis.items?.[0];
