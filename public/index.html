@@ -16,17 +16,21 @@ const state=JSON.parse(localStorage.getItem('nb-release')||'{"goal":2000,"protei
   document.querySelectorAll('small').forEach(node=>{if(node.textContent.includes('條碼'))node.textContent=node.textContent.replace('、條碼','');});
   document.querySelectorAll("button[onclick*='barcode'],.barcode").forEach(button=>button.remove());
   document.querySelectorAll('#diary article.card').forEach(card=>{if(card.querySelector('b')?.textContent.includes('快速工具'))card.remove();});
-  const mealQuickOptions=[
-    ['早餐 · 蛋白燕麥杯',420,'早餐 · 蛋白燕麥杯 <small>約 420 kcal</small>'],
-    ['午餐 · 雞胸藜麥餐盒',520,'午餐 · 雞胸藜麥餐盒 <small>約 520 kcal</small>'],
-    ['晚餐 · 鮭魚蔬菜盤',580,'晚餐 · 鮭魚蔬菜盤 <small>約 580 kcal</small>']
-  ];
-  document.querySelectorAll('#addModal .food-option').forEach((button,index)=>{
-    const option=mealQuickOptions[index];
-    if(!option)return;
-    button.innerHTML=option[2];
-    button.onclick=()=>pickFood(option[0],option[1]);
-  });
+  document.querySelectorAll('#addModal .food-option').forEach(button=>button.remove());
+  window.selectedMealCategory='breakfast';
+  const categoryPicker=document.createElement('div');
+  categoryPicker.id='mealCategoryPicker';
+  categoryPicker.innerHTML='<small class="muted">加入到哪一餐？</small><div class="buttons" style="margin-top:7px"><button type="button" data-category="breakfast" class="secondary">早餐</button><button type="button" data-category="lunch" class="secondary">午餐</button><button type="button" data-category="dinner" class="secondary">晚餐</button></div>';
+  $('foodKcal').insertAdjacentElement('afterend',categoryPicker);
+  function selectMealCategory(category){
+    window.selectedMealCategory=category;
+    categoryPicker.querySelectorAll('button').forEach(button=>{
+      const active=button.dataset.category===category;
+      button.className=active?'primary':'secondary';
+    });
+  }
+  categoryPicker.querySelectorAll('button').forEach(button=>button.onclick=()=>selectMealCategory(button.dataset.category));
+  selectMealCategory('breakfast');
   const photoNutritionNode=document.createElement('div');
   photoNutritionNode.id='photoNutrition';
   photoNutritionNode.className='line';
@@ -139,15 +143,16 @@ const state=JSON.parse(localStorage.getItem('nb-release')||'{"goal":2000,"protei
     }catch(error){$('photoStatus').textContent='無法分析：'+(error.message||'請改用較清晰的 JPG 照片。');}
   }
   const originalOpenAdd=openAdd;
-  openAdd=function(mode){if(mode!=='photo')window.pendingMealPhoto=null;originalOpenAdd(mode);};
+  openAdd=function(mode){if(mode!=='photo')window.pendingMealPhoto=null;originalOpenAdd(mode);selectMealCategory('breakfast');};
   function saveMeal(){
     const n=$('foodName').value.trim(),k=Number($('foodKcal').value);
     if(!n||!k){toast('請輸入食物名稱與熱量。');return}
     const photo=window.pendingMealPhoto;
     const icon=photo?'<img src="'+photo+'" alt="餐點照片" style="width:100%;height:100%;object-fit:cover;border-radius:13px">':'🥗';
-    state.meals.push({name:n,kcal:k,emoji:icon,photo});
+    const category=window.selectedMealCategory||'breakfast';
+    state.meals.push({name:n,kcal:k,emoji:icon,photo,category});
     window.pendingMealPhoto=null;
-    render();$('addModal').close();$('foodName').value='';$('foodKcal').value='';toast('已加入今天的日誌。');
+    render();$('addModal').close();$('foodName').value='';$('foodKcal').value='';applyDiaryFilter(category);toast('已加入'+mealLabels[category]+'。');
   }
   generatePlan();
   applyDiaryFilter('all');
