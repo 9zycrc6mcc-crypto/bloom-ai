@@ -83,7 +83,9 @@ const state=JSON.parse(localStorage.getItem('nb-release')||'{"goal":2000,"protei
     $('photoStatus').textContent='正在分析餐點照片…';
     try{
       const image=await imageForAnalysis(sourceFile);
-      const base64=(await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result.split(',')[1]);reader.onerror=reject;reader.readAsDataURL(image.file)}));
+      const photoDataUrl=(await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(image.file)}));
+      window.pendingMealPhoto=photoDataUrl;
+      const base64=photoDataUrl.split(',')[1];
       const response=await fetch('/.netlify/functions/analyze-meal',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({imageBase64:base64,mimeType:image.mimeType})});
       const analysis=await response.json();
       if(!response.ok)throw new Error(analysis.error);
@@ -95,6 +97,17 @@ const state=JSON.parse(localStorage.getItem('nb-release')||'{"goal":2000,"protei
       $('photoStatus').textContent=(analysis.note||'AI 已產生估算，請確認後再加入日誌。')+' 熱量與蛋白質皆為估算值。';
       $('foodName').focus();
     }catch(error){$('photoStatus').textContent='無法分析：'+(error.message||'請改用較清晰的 JPG 照片。');}
+  }
+  const originalOpenAdd=openAdd;
+  openAdd=function(mode){if(mode!=='photo')window.pendingMealPhoto=null;originalOpenAdd(mode);};
+  function saveMeal(){
+    const n=$('foodName').value.trim(),k=Number($('foodKcal').value);
+    if(!n||!k){toast('請輸入食物名稱與熱量。');return}
+    const photo=window.pendingMealPhoto;
+    const icon=photo?'<img src="'+photo+'" alt="餐點照片" style="width:100%;height:100%;object-fit:cover;border-radius:13px">':'🥗';
+    state.meals.push({name:n,kcal:k,emoji:icon,photo});
+    window.pendingMealPhoto=null;
+    render();$('addModal').close();$('foodName').value='';$('foodKcal').value='';toast('已加入今天的日誌。');
   }
   generatePlan();
   applyDiaryFilter('all');
