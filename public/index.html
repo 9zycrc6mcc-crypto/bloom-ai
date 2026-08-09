@@ -159,6 +159,18 @@ const state=JSON.parse(localStorage.getItem('nb-release')||'{"goal":2000,"protei
     window.pendingMealPhoto=null;
     render();$('addModal').close();$('foodName').value='';$('foodKcal').value='';applyDiaryFilter(category);toast('已加入'+mealLabels[category]+'。');
   }
+  persist=function(){localStorage.setItem(window.bloomStorageKey||'nb-release',JSON.stringify(state));};
+  window.loadAccountData=function(user){
+    const storageKey='bloom-account-'+user.uid;
+    const emptyState={goal:2000,protein:120,water:0,meals:[]};
+    let savedState;
+    try{savedState=JSON.parse(localStorage.getItem(storageKey)||'null');}catch(error){savedState=null;}
+    const nextState=savedState&&Array.isArray(savedState.meals)?savedState:emptyState;
+    Object.keys(state).forEach(key=>delete state[key]);
+    Object.assign(state,nextState);
+    window.bloomStorageKey=storageKey;
+    render();generatePlan();applyDiaryFilter('all');
+  };
   generatePlan();
   applyDiaryFilter('all');
 </script><script type="module">
@@ -205,6 +217,7 @@ const state=JSON.parse(localStorage.getItem('nb-release')||'{"goal":2000,"protei
     authGate.style.display=user?'none':'grid';
     profileGate.style.display='none';
     if(!user)return;
+    window.loadAccountData(user);
     const accountCard=document.querySelector('#account article.card');
     if(accountCard){accountCard.querySelector('b').textContent=user.email||'Bloom 用戶';accountCard.querySelector('p').textContent='已登入 · 餐點紀錄目前儲存在此裝置';if(!document.getElementById('logoutButton')){const logoutButton=document.createElement('button');logoutButton.id='logoutButton';logoutButton.className='tiny';logoutButton.textContent='登出';logoutButton.onclick=()=>signOut(auth);accountCard.append(logoutButton);}}
     if(!localStorage.getItem('bloom-profile-'+user.uid)){profileGate.style.display='grid';return;}
