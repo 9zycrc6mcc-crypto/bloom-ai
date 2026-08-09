@@ -14,7 +14,7 @@ export default async (request) => {
 
     const prompt = `Analyze this meal photo for a consumer food journal. Return JSON only, with this exact shape:
 {"items":[{"name":"string","estimated_grams":0,"kcal":0,"protein_g":0,"confidence":0}],"total_kcal":0,"total_protein_g":0,"note":"string"}
-List separate visible foods where possible. Use conservative estimates, set confidence from 0 to 1, and say when portion size is uncertain. This is an estimate, not medical or dietary advice.`;
+List separate visible foods where possible. Use conservative estimates, set confidence from 0 to 1, and say when portion size is uncertain. Return every name and the note in Traditional Chinese (zh-TW). This is an estimate, not medical or dietary advice.`;
     const response = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
       headers: {
