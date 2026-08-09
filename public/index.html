@@ -143,13 +143,14 @@ const state=JSON.parse(localStorage.getItem('nb-release')||'{"goal":2000,"protei
       if(first){$('foodName').value=first.name;$('foodKcal').value=Math.round(analysis.total_kcal||first.kcal||0);}
       $('photoKcal').textContent=Math.round(analysis.total_kcal||first?.kcal||0);
       $('photoProtein').textContent=Math.round(analysis.total_protein_g||first?.protein_g||0);
+      window.pendingMealProtein=Math.round(analysis.total_protein_g||first?.protein_g||0);
       $('photoNutrition').style.display='flex';
       $('photoStatus').textContent=(analysis.note||'AI 已產生估算，請確認後再加入日誌。')+' 熱量與蛋白質皆為估算值。';
       $('foodName').focus();
     }catch(error){$('photoStatus').textContent='無法分析：'+(error.message||'請改用較清晰的 JPG 照片。');}
   }
   const originalOpenAdd=openAdd;
-  openAdd=function(mode){if(mode!=='photo')window.pendingMealPhoto=null;originalOpenAdd(mode);selectMealCategory('breakfast');};
+  openAdd=function(mode){if(mode!=='photo'){window.pendingMealPhoto=null;window.pendingMealProtein=0;}originalOpenAdd(mode);selectMealCategory('breakfast');};
   function saveMeal(){
     const n=$('foodName').value.trim(),k=Number($('foodKcal').value);
     if(!n||!k){toast('請輸入食物名稱與熱量。');return}
@@ -191,7 +192,16 @@ const state=JSON.parse(localStorage.getItem('nb-release')||'{"goal":2000,"protei
   window.setDiaryDate=value=>{window.selectedDiaryDate=value==='today'?todayDate():value==='yesterday'?yesterdayDate():value;renderDiaryForDate();};
   applyDiaryFilter=()=>renderDiaryForDate();
   const datedOpenAdd=openAdd;openAdd=function(mode){datedOpenAdd(mode);foodDate.value=window.selectedDiaryDate||todayDate();};
-  saveMeal=function(){const name=$('foodName').value.trim(),kcal=Number($('foodKcal').value);if(!name||!kcal){toast('請輸入食物名稱與熱量。');return;}const photo=window.pendingMealPhoto;const emoji=photo?'<img src="'+photo+'" alt="餐點照片" style="width:100%;height:100%;object-fit:cover;border-radius:13px">':'🥗';const date=foodDate.value||todayDate();state.meals.push({name,kcal,emoji,photo,category:window.selectedMealCategory||'breakfast',date});window.pendingMealPhoto=null;render();$('addModal').close();$('foodName').value='';$('foodKcal').value='';window.selectedDiaryDate=date;renderDiaryForDate();toast('已加入 '+diaryDateText(date)+' 的日誌。');};
+  saveMeal=function(){const name=$('foodName').value.trim(),kcal=Number($('foodKcal').value);if(!name||!kcal){toast('請輸入食物名稱與熱量。');return;}const photo=window.pendingMealPhoto;const emoji=photo?'<img src="'+photo+'" alt="餐點照片" style="width:100%;height:100%;object-fit:cover;border-radius:13px">':'🥗';const date=foodDate.value||todayDate();const protein=Number(window.pendingMealProtein)||0;state.meals.push({name,kcal,protein,emoji,photo,category:window.selectedMealCategory||'breakfast',date});window.pendingMealPhoto=null;window.pendingMealProtein=0;render();$('addModal').close();$('foodName').value='';$('foodKcal').value='';window.selectedDiaryDate=date;renderDiaryForDate();toast('已加入 '+diaryDateText(date)+' 的日誌。');};
+  const caloriesOn=date=>state.meals.filter(meal=>(meal.date||todayDate())===date).reduce((sum,meal)=>sum+Number(meal.kcal||0),0);
+  const proteinOn=date=>state.meals.filter(meal=>(meal.date||todayDate())===date).reduce((sum,meal)=>sum+Number(meal.protein||0),0);
+  function ensureWaterLog(){if(!state.waterLog)state.waterLog={[todayDate()]:Number(state.water||0)};if(state.waterLog[todayDate()]===undefined)state.waterLog[todayDate()]=0;state.water=state.waterLog[todayDate()];}
+  function calculateStreak(){let streak=0;for(let daysAgo=0;daysAgo<366;daysAgo++){const date=new Date();date.setDate(date.getDate()-daysAgo);const key=localDate(date);if(caloriesOn(key)>0||Number(state.waterLog[key]||0)>0)streak++;else break;}return streak;}
+  function renderProgress(){ensureWaterLog();const dates=Array.from({length:7},(_,index)=>{const date=new Date();date.setDate(date.getDate()-6+index);return localDate(date);});const activeDates=dates.filter(date=>caloriesOn(date)>0);const average=activeDates.length?Math.round(activeDates.reduce((sum,date)=>sum+caloriesOn(date),0)/activeDates.length):0;const proteinToday=proteinOn(todayDate());const streak=calculateStreak();state.streak=streak;const chart=dates.map(date=>{const kcal=caloriesOn(date),height=Math.max(kcal?8:2,Math.min(100,Math.round(kcal/Math.max(state.goal,1)*100)));const label=new Intl.DateTimeFormat('zh-TW',{weekday:'short'}).format(new Date(date+'T12:00:00')).replace('週','');return '<div class="bar '+(date===todayDate()?'today':'')+'"><i style="height:'+height+'%"></i>'+label+'</div>';}).join('');const panel=document.querySelector('#progress article.card');if(panel)panel.innerHTML='<b>本週平均 '+average.toLocaleString()+' kcal</b><p class="muted">有記錄的 '+activeDates.length+' 天平均熱量</p><div class="chart">'+chart+'</div><div class="metric">今日熱量 <span>目標 '+state.goal.toLocaleString()+' kcal</span><b>'+caloriesOn(todayDate()).toLocaleString()+' kcal</b></div><div class="metric">今日蛋白質 <span>目標 '+state.protein+' g</span><b>'+proteinToday+' g</b></div><div class="metric">連續記錄 <span>餐點或飲水</span><b>'+streak+' 天</b></div>';
+  }
+  total=()=>caloriesOn(todayDate());
+  const renderWithHabits=render;render=function(){ensureWaterLog();state.streak=calculateStreak();renderWithHabits();const todayMeals=state.meals.filter(meal=>(meal.date||todayDate())===todayDate());$('todayMeals').innerHTML=todayMeals.map(meal=>'<div class="meal"><div class="emoji">'+meal.emoji+'</div><div class="name"><b>'+esc(meal.name)+'</b><small>已記錄</small></div><b>'+meal.kcal+'<small> kcal</small></b></div>').join('')||'<p class="muted">尚未記錄餐點。</p>';renderProgress();};
+  addWater=function(){ensureWaterLog();if(state.waterLog[todayDate()]<8)state.waterLog[todayDate()]++;state.water=state.waterLog[todayDate()];render();};
   const reminderDefaults={enabled:false,breakfast:{on:true,time:'08:00'},lunch:{on:true,time:'12:30'},dinner:{on:true,time:'18:30'},water:{on:true,time:'15:00'}};
   window.reminderTimers=[];
   function notifyReminder(title,body){if('Notification'in window&&Notification.permission==='granted')new Notification(title,{body,icon:'icon.svg'});else toast(body);}
