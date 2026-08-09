@@ -22,14 +22,17 @@ List separate visible foods where possible. Use conservative estimates, set conf
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-5.6-luna",
+        model: "gpt-4.1-mini",
         input: [{ role: "user", content: [
           { type: "input_text", text: prompt },
           { type: "input_image", image_url: `data:${mimeType};base64,${imageBase64}` },
         ] }],
       }),
     });
-    if (!response.ok) return json({ error: "AI analysis failed" }, 502);
+    if (!response.ok) {
+      const detail = await response.json().catch(() => null);
+      return json({ error: detail?.error?.message || "AI analysis failed" }, 502);
+    }
     const result = await response.json();
     const raw = result.output_text?.replace(/^```json\s*|\s*```$/g, "").trim();
     const analysis = JSON.parse(raw);
