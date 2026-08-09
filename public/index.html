@@ -174,6 +174,11 @@ const state=JSON.parse(localStorage.getItem('nb-release')||'{"goal":2000,"protei
   authGate.style.cssText='position:fixed;inset:0;z-index:99;display:grid;place-items:center;padding:24px;background:#f5f8f5;color:#17241d;font-family:system-ui,"Noto Sans TC",sans-serif';
   authGate.innerHTML='<div style="width:min(100%,390px)"><div style="font-weight:850;font-size:26px;color:#176b4a;margin-bottom:36px">bloom</div><h1 id="authTitle" style="margin:0 0 8px;font-size:28px">歡迎回來</h1><p id="authSubtitle" style="color:#66756d;font-size:14px;margin:0 0 22px">登入後繼續記錄你的每一天。</p><input id="authEmail" type="email" autocomplete="email" placeholder="電子郵件" style="width:100%;box-sizing:border-box;border:1px solid #dbe5de;border-radius:12px;padding:14px;margin:6px 0;font:inherit"><input id="authPassword" type="password" autocomplete="current-password" placeholder="密碼（至少 6 個字元）" style="width:100%;box-sizing:border-box;border:1px solid #dbe5de;border-radius:12px;padding:14px;margin:6px 0;font:inherit"><p id="authMessage" style="min-height:20px;color:#b42318;font-size:12px"></p><button id="authSubmit" style="width:100%;border:0;border-radius:12px;padding:14px;background:#176b4a;color:#fff;font-weight:800;font-size:15px">登入</button><button id="authSwitch" style="width:100%;margin-top:10px;border:0;background:none;color:#176b4a;font-weight:700;padding:10px">建立新帳戶</button></div>';
   document.body.append(authGate);
+  const profileGate=document.createElement('section');
+  profileGate.id='profileGate';
+  profileGate.style.cssText='position:fixed;inset:0;z-index:98;display:none;place-items:center;padding:24px;background:#f5f8f5;color:#17241d;font-family:system-ui,"Noto Sans TC",sans-serif';
+  profileGate.innerHTML='<div style="width:min(100%,390px)"><div style="font-weight:850;font-size:26px;color:#176b4a;margin-bottom:36px">bloom</div><h1 style="margin:0 0 8px;font-size:28px">先認識你一下</h1><p style="color:#66756d;font-size:14px;margin:0 0 22px">輸入身高與體重，為你設定每日熱量參考值。</p><label style="font-size:13px;font-weight:700">身高（cm）</label><input id="profileHeight" type="number" min="100" max="230" inputmode="decimal" placeholder="例如 165" style="width:100%;box-sizing:border-box;border:1px solid #dbe5de;border-radius:12px;padding:14px;margin:6px 0 14px;font:inherit"><label style="font-size:13px;font-weight:700">體重（kg）</label><input id="profileWeight" type="number" min="30" max="300" step="0.1" inputmode="decimal" placeholder="例如 58" style="width:100%;box-sizing:border-box;border:1px solid #dbe5de;border-radius:12px;padding:14px;margin:6px 0"><p id="profileMessage" style="min-height:20px;color:#b42318;font-size:12px"></p><button id="profileSubmit" style="width:100%;border:0;border-radius:12px;padding:14px;background:#176b4a;color:#fff;font-weight:800;font-size:15px">設定我的目標</button><p style="color:#66756d;font-size:11px;line-height:1.5;margin-top:16px">此為一般健康紀錄的初步估算，並非醫療或營養建議；你可隨時在帳戶頁調整。</p></div>';
+  document.body.append(profileGate);
   const authTitle=document.getElementById('authTitle'),authSubtitle=document.getElementById('authSubtitle'),authMessage=document.getElementById('authMessage'),authSubmit=document.getElementById('authSubmit'),authSwitch=document.getElementById('authSwitch');
   function setAuthMode(mode){authMode=mode;const creating=mode==='signup';authTitle.textContent=creating?'建立你的帳戶':'歡迎回來';authSubtitle.textContent=creating?'建立帳戶後即可使用 Bloom。':'登入後繼續記錄你的每一天。';authSubmit.textContent=creating?'建立帳戶':'登入';authSwitch.textContent=creating?'已有帳戶？登入':'建立新帳戶';authMessage.textContent='';}
   authSwitch.onclick=()=>setAuthMode(authMode==='login'?'signup':'login');
@@ -183,9 +188,24 @@ const state=JSON.parse(localStorage.getItem('nb-release')||'{"goal":2000,"protei
     authSubmit.disabled=true;authSubmit.textContent='處理中…';authMessage.textContent='';
     try{if(authMode==='signup')await createUserWithEmailAndPassword(auth,email,password);else await signInWithEmailAndPassword(auth,email,password);}catch(error){const codes={"auth/invalid-credential":"帳號或密碼不正確。","auth/email-already-in-use":"此電子郵件已建立帳戶。","auth/weak-password":"密碼至少需要 6 個字元。","auth/invalid-email":"請輸入有效的電子郵件。"};authMessage.textContent=codes[error.code]||'登入失敗，請稍後再試。';authSubmit.disabled=false;authSubmit.textContent=authMode==='signup'?'建立帳戶':'登入';}
   };
+  function applyProfile(user){
+    const height=Number(document.getElementById('profileHeight').value),weight=Number(document.getElementById('profileWeight').value);
+    if(!height||!weight){document.getElementById('profileMessage').textContent='請輸入身高與體重。';return;}
+    const bmi=weight/((height/100)**2);
+    const adjustment=bmi<18.5?250:bmi>=27?-300:bmi>=25?-150:0;
+    const calories=Math.max(1200,Math.round((weight*30+adjustment)/50)*50);
+    state.goal=calories;state.profile={height,weight,bmi:Math.round(bmi*10)/10};
+    persist();render();generatePlan();
+    localStorage.setItem('bloom-profile-'+user.uid,JSON.stringify(state.profile));
+    profileGate.style.display='none';
+    toast('已設定每日 '+calories.toLocaleString()+' kcal 的熱量參考目標。');
+  }
+  document.getElementById('profileSubmit').onclick=()=>{if(auth.currentUser)applyProfile(auth.currentUser);};
   onAuthStateChanged(auth,user=>{
     authGate.style.display=user?'none':'grid';
+    profileGate.style.display='none';
     if(!user)return;
+    if(!localStorage.getItem('bloom-profile-'+user.uid)){profileGate.style.display='grid';return;}
     const accountCard=document.querySelector('#account article.card');
     if(accountCard){accountCard.querySelector('b').textContent=user.email||'Bloom 用戶';accountCard.querySelector('p').textContent='已登入 · 餐點紀錄目前儲存在此裝置';if(!document.getElementById('logoutButton')){const logoutButton=document.createElement('button');logoutButton.id='logoutButton';logoutButton.className='tiny';logoutButton.textContent='登出';logoutButton.onclick=()=>signOut(auth);accountCard.append(logoutButton);}}
   });
