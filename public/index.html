@@ -71,15 +71,12 @@ const state=JSON.parse(localStorage.getItem('nb-release')||'{"goal":2000,"protei
     const calories=shares.map(share=>Math.round(state.goal*share/10)*10);
     const protein=shares.map(share=>Math.round(state.protein*share));
     const mealNames=['早餐','午餐','晚餐'];
-    const start=planVersion++%twoWeekMeals.length;
-    document.querySelector('#plan .title h2').textContent='14 日餐食建議';
-    $('planFocus').textContent='14 天三餐規劃 · 依你的每日目標分配';
-    $('planTarget').textContent='每天約 '+state.goal.toLocaleString()+' kcal · 蛋白質 '+state.protein+'g；每餐含主食與搭配飲品。';
-    $('planList').innerHTML=twoWeekMeals.map((day,index)=>{
-      const meals=twoWeekMeals[(index+start)%twoWeekMeals.length];
-      return '<details class="card" '+(index===0?'open':'')+'><summary><b>第 '+(index+1)+' 天</b><small class="muted"> · '+state.goal.toLocaleString()+' kcal · '+state.protein+'g 蛋白質</small></summary>'+meals.map((value,mealIndex)=>{const [icon,main,drink]=value.split('|');return '<div class="meal"><div class="emoji">'+icon+'</div><div class="name"><b>'+mealNames[mealIndex]+' · '+main+'</b><small>搭配：'+drink+' · '+calories[mealIndex]+' kcal · 蛋白質 '+protein[mealIndex]+'g</small></div></div>';}).join('')+'</details>';
-    }).join('');
-    if(planVersion>1)toast('已重新安排 14 天三餐與搭配飲品。');
+    const plan=twoWeekMeals[planVersion++%twoWeekMeals.length];
+    document.querySelector('#plan .title h2').textContent='今日餐食建議';
+    $('planFocus').textContent='依你的目標安排三餐';
+    $('planTarget').textContent='今日合計 '+state.goal.toLocaleString()+' kcal · 蛋白質 '+state.protein+'g；共備有 14 組三餐可重新安排。';
+    $('planList').innerHTML='<b>今天吃什麼</b>'+plan.map((value,mealIndex)=>{const [icon,main,drink]=value.split('|');return '<div class="meal"><div class="emoji">'+icon+'</div><div class="name"><b>'+mealNames[mealIndex]+' · '+main+'</b><small>搭配：'+drink+' · '+calories[mealIndex]+' kcal · 蛋白質 '+protein[mealIndex]+'g</small></div></div>';}).join('')+'<div class="metric"><span>今日建議合計</span><b>'+calories.reduce((a,b)=>a+b,0).toLocaleString()+' kcal · '+protein.reduce((a,b)=>a+b,0)+'g 蛋白質</b></div>';
+    if(planVersion>1)toast('已從 14 組方案中重新安排今天的三餐。');
   }
   function saveGoal(event){
     event.preventDefault();
