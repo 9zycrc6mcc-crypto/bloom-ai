@@ -223,13 +223,49 @@ const state=JSON.parse(localStorage.getItem('nb-release')||'{"goal":2000,"protei
     toast('已設定每日 '+calories.toLocaleString()+' kcal 的熱量參考目標。');
   }
   document.getElementById('profileSubmit').onclick=()=>{if(auth.currentUser)applyProfile(auth.currentUser);};
+  const animalAvatars=['🐶','🐱','🐰','🐼','🦊','🐨','🐯','🦁','🐸','🐧','🦄','🦦'];
+  function avatarKey(user){return 'bloom-avatar-'+user.uid;}
+  function readAvatar(user){return localStorage.getItem(avatarKey(user))||'🌱';}
+  function avatarMarkup(avatar){return avatar&&avatar.startsWith('data:')?'<img src="'+avatar+'" alt="使用者頭像" style="width:100%;height:100%;object-fit:cover;border-radius:50%">':avatar;}
+  function updateAvatar(user){
+    const avatar=readAvatar(user);
+    const headerAvatar=document.querySelector('.head .profile');
+    if(headerAvatar){headerAvatar.innerHTML=avatarMarkup(avatar);headerAvatar.style.overflow='hidden';}
+    const preview=document.getElementById('avatarPreview');
+    if(preview)preview.innerHTML=avatarMarkup(avatar);
+  }
+  function openAvatarPicker(user){
+    const existing=document.getElementById('avatarModal');
+    if(existing)existing.remove();
+    const modal=document.createElement('dialog');
+    modal.id='avatarModal';
+    modal.innerHTML='<div style="padding:22px"><div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0;font-size:21px">選擇你的頭像</h2><button id="closeAvatar" style="border:0;background:none;font-size:22px">×</button></div><p style="color:#66756d;font-size:13px">選一個動物，或上傳自己的照片。</p><div id="animalChoices" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px"></div><label style="display:block;margin-top:18px;border:1px dashed #9ab5a4;border-radius:13px;padding:13px;text-align:center;color:#176b4a;font-weight:750;cursor:pointer">上傳照片<input id="avatarUpload" type="file" accept="image/*" style="display:none"></label><button id="removeAvatar" style="width:100%;margin-top:10px;border:0;background:#e9efeb;border-radius:12px;padding:12px;color:#17241d;font-weight:700">恢復預設頭像</button></div>';
+    document.body.append(modal);
+    const choices=modal.querySelector('#animalChoices');
+    animalAvatars.forEach(animal=>{const button=document.createElement('button');button.textContent=animal;button.style.cssText='border:1px solid #dbe5de;background:#fff;border-radius:14px;padding:10px;font-size:25px';button.onclick=()=>{localStorage.setItem(avatarKey(user),animal);updateAvatar(user);modal.close();};choices.append(button);});
+    modal.querySelector('#closeAvatar').onclick=()=>modal.close();
+    modal.querySelector('#removeAvatar').onclick=()=>{localStorage.removeItem(avatarKey(user));updateAvatar(user);modal.close();};
+    modal.querySelector('#avatarUpload').onchange=event=>{
+      const file=event.target.files&&event.target.files[0];if(!file)return;
+      if(file.size>3*1024*1024){toast('請選擇小於 3 MB 的照片。');return;}
+      const reader=new FileReader();reader.onload=()=>{const image=new Image();image.onload=()=>{const scale=Math.min(1,512/Math.max(image.width,image.height));const canvas=document.createElement('canvas');canvas.width=Math.round(image.width*scale);canvas.height=Math.round(image.height*scale);canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);localStorage.setItem(avatarKey(user),canvas.toDataURL('image/jpeg',.82));updateAvatar(user);modal.close();};image.src=reader.result;};reader.readAsDataURL(file);
+    };
+    modal.showModal();
+  }
+  function addAvatarControl(user,accountCard){
+    if(document.getElementById('avatarControl')){updateAvatar(user);return;}
+    const control=document.createElement('button');control.id='avatarControl';control.type='button';control.style.cssText='display:flex;align-items:center;gap:12px;width:100%;border:0;background:#f5f8f5;border-radius:14px;padding:11px;margin:12px 0 4px;text-align:left;color:#17241d';
+    control.innerHTML='<span id="avatarPreview" style="width:42px;height:42px;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:22px;overflow:hidden">🌱</span><span><b style="font-size:13px">個人頭像</b><small style="display:block;color:#66756d;margin-top:3px">選擇動物或上傳照片</small></span><span style="margin-left:auto;color:#176b4a">›</span>';
+    control.onclick=()=>openAvatarPicker(user);
+    accountCard.append(control);updateAvatar(user);
+  }
   onAuthStateChanged(auth,user=>{
     authGate.style.display=user?'none':'grid';
     profileGate.style.display='none';
     if(!user)return;
     window.loadAccountData(user);
     const accountCard=document.querySelector('#account article.card');
-    if(accountCard){accountCard.querySelector('b').textContent=user.email||'Bloom 用戶';accountCard.querySelector('p').textContent='已登入 · 餐點紀錄目前儲存在此裝置';if(!document.getElementById('logoutButton')){const logoutButton=document.createElement('button');logoutButton.id='logoutButton';logoutButton.className='tiny';logoutButton.textContent='登出';logoutButton.onclick=()=>signOut(auth);accountCard.append(logoutButton);}}
+    if(accountCard){accountCard.querySelector('b').textContent=user.email||'Bloom 用戶';accountCard.querySelector('p').textContent='已登入 · 餐點紀錄目前儲存在此裝置';addAvatarControl(user,accountCard);if(!document.getElementById('logoutButton')){const logoutButton=document.createElement('button');logoutButton.id='logoutButton';logoutButton.className='tiny';logoutButton.textContent='登出';logoutButton.onclick=()=>signOut(auth);accountCard.append(logoutButton);}}
     if(!localStorage.getItem('bloom-profile-'+user.uid)){profileGate.style.display='grid';return;}
   });
 </script></body></html>
