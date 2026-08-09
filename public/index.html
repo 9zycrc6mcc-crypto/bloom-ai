@@ -51,20 +51,39 @@ const state=JSON.parse(localStorage.getItem('nb-release')||'{"goal":2000,"protei
   }
   function openCamera(){$('mealPhoto').click();}
   function openPhotoLibrary(){$('libraryPhoto').click();}
+  async function imageForAnalysis(file){
+    if(!file.type.startsWith('image/'))throw new Error('請選擇 JPG、PNG、WebP 或 GIF 圖片。');
+    try{
+      const bitmap=await createImageBitmap(file);
+      const maxSide=1280;
+      const scale=Math.min(1,maxSide/Math.max(bitmap.width,bitmap.height));
+      const canvas=document.createElement('canvas');
+      canvas.width=Math.max(1,Math.round(bitmap.width*scale));
+      canvas.height=Math.max(1,Math.round(bitmap.height*scale));
+      canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);
+      const compressed=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',0.82));
+      if(!compressed)throw new Error('照片壓縮失敗，請改從相簿選擇 JPG 圖片。');
+      return {file:compressed,mimeType:'image/jpeg'};
+    }catch(error){
+      if(file.size>5_000_000)throw new Error('照片格式或尺寸無法處理，請從相簿選擇較小的 JPG 圖片。');
+      return {file,mimeType:file.type};
+    }
+  }
   async function preparePhoto(input){
     if(!input.files||!input.files[0])return;
-    const file=input.files[0];
+    const sourceFile=input.files[0];
     $('photoStatus').textContent='正在分析餐點照片…';
     try{
-      const base64=(await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result.split(',')[1]);reader.onerror=reject;reader.readAsDataURL(file)}));
-      const response=await fetch('/.netlify/functions/analyze-meal',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({imageBase64:base64,mimeType:file.type})});
+      const image=await imageForAnalysis(sourceFile);
+      const base64=(await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result.split(',')[1]);reader.onerror=reject;reader.readAsDataURL(image.file)}));
+      const response=await fetch('/.netlify/functions/analyze-meal',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({imageBase64:base64,mimeType:image.mimeType})});
       const analysis=await response.json();
       if(!response.ok)throw new Error(analysis.error);
       const first=analysis.items?.[0];
       if(first){$('foodName').value=first.name;$('foodKcal').value=Math.round(analysis.total_kcal||first.kcal||0);}
       $('photoStatus').textContent=(analysis.note||'AI 已產生估算，請確認後再加入日誌。')+' 熱量與蛋白質皆為估算值。';
       $('foodName').focus();
-    }catch(error){$('photoStatus').textContent='無法分析照片，請手動輸入食物與熱量。';}
+    }catch(error){$('photoStatus').textContent='無法分析：'+(error.message||'請改用較清晰的 JPG 照片。');}
   }
   generatePlan();
   applyDiaryFilter('all');
