@@ -241,6 +241,15 @@ const state=JSON.parse(localStorage.getItem('nb-release')||'{"goal":2000,"protei
   const firebaseApp=initializeApp(firebaseConfig);
   const auth=getAuth(firebaseApp);
   let authMode='login';
+  const splashStyle=document.createElement('style');
+  splashStyle.textContent='@keyframes bloomPulse{0%,100%{transform:scale(.88);opacity:.55}50%{transform:scale(1.08);opacity:1}}@keyframes bloomSpin{to{transform:rotate(360deg)}}@keyframes bloomRise{from{transform:translateY(12px);opacity:0}to{transform:translateY(0);opacity:1}}';
+  document.head.append(splashStyle);
+  const splash=document.createElement('section');
+  splash.id='bloomSplash';
+  splash.style.cssText='position:fixed;inset:0;z-index:100;display:grid;place-items:center;overflow:hidden;background:radial-gradient(circle at 50% 36%,#e4f7e9 0,#f5f8f5 42%,#d7eadc 100%);color:#17241d;font-family:system-ui,"Noto Sans TC",sans-serif;transition:opacity .35s ease';
+  splash.innerHTML='<div style="text-align:center;animation:bloomRise .7s ease both"><div style="width:106px;height:106px;border:2px solid #176b4a55;border-radius:50%;display:grid;place-items:center;margin:0 auto 22px;animation:bloomSpin 8s linear infinite"><div style="width:76px;height:76px;border-radius:42% 58% 48% 52%;background:#176b4a;display:grid;place-items:center;color:#fff;font-size:34px;box-shadow:0 12px 25px #176b4a38;animation:bloomPulse 1.6s ease-in-out infinite">✦</div></div><div style="font-weight:900;font-size:34px;letter-spacing:-2px;color:#176b4a">Bloom</div><p style="margin:8px 0 0;color:#66756d;font-size:13px">每一餐，為自己綻放</p><div style="width:90px;height:3px;border-radius:3px;background:#176b4a1e;margin:27px auto 0;overflow:hidden"><i style="display:block;width:45%;height:100%;border-radius:3px;background:#176b4a;animation:bloomPulse .8s ease-in-out infinite"></i></div></div>';
+  document.body.append(splash);
+  setTimeout(()=>{splash.style.opacity='0';setTimeout(()=>splash.remove(),380);},1500);
   const authGate=document.createElement('section');
   authGate.id='authGate';
   authGate.style.cssText='position:fixed;inset:0;z-index:99;display:grid;place-items:center;padding:24px;background:#f5f8f5;color:#17241d;font-family:system-ui,"Noto Sans TC",sans-serif';
