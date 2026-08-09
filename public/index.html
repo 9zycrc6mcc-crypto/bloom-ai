@@ -196,6 +196,7 @@ const state=JSON.parse(localStorage.getItem('nb-release')||'{"goal":2000,"protei
   const addLogButton=document.querySelector('#addModal > .modal > .buttons .primary');if(addLogButton){addLogButton.type='button';addLogButton.onclick=event=>{event.preventDefault();saveMeal();};}
   const caloriesOn=date=>state.meals.filter(meal=>(meal.date||todayDate())===date).reduce((sum,meal)=>sum+Number(meal.kcal||0),0);
   const proteinOn=date=>state.meals.filter(meal=>(meal.date||todayDate())===date).reduce((sum,meal)=>sum+Number(meal.protein||0),0);
+  document.querySelector('.hero>.line').style.display='none';
   function waterTarget(){const weight=Number(state.profile?.weight)||60;return Math.max(1500,Math.round((weight*30)/500)*500);}
   function waterGoal(){return Number(state.habitGoals?.water)||waterTarget();}
   function stepsGoal(){return Number(state.habitGoals?.steps)||8000;}
