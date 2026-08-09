@@ -20,7 +20,7 @@ const state=JSON.parse(localStorage.getItem('nb-release')||'{"goal":2000,"protei
   window.selectedMealCategory='breakfast';
   const categoryPicker=document.createElement('div');
   categoryPicker.id='mealCategoryPicker';
-  categoryPicker.style.marginBottom='24px';
+  categoryPicker.style.marginBottom='48px';
   categoryPicker.innerHTML='<small class="muted">加入到哪一餐？</small><div class="buttons" style="margin-top:7px"><button type="button" data-category="breakfast" class="secondary">早餐</button><button type="button" data-category="lunch" class="secondary">午餐</button><button type="button" data-category="dinner" class="secondary">晚餐</button></div>';
   $('foodKcal').insertAdjacentElement('afterend',categoryPicker);
   function selectMealCategory(category){
