@@ -34,7 +34,13 @@ List separate visible foods where possible. Use conservative estimates, set conf
       return json({ error: detail?.error?.message || "AI analysis failed" }, 502);
     }
     const result = await response.json();
-    const raw = result.output_text?.replace(/^```json\s*|\s*```$/g, "").trim();
+    const outputText = result.output_text || result.output
+      ?.flatMap(item => item.content || [])
+      .filter(item => item.type === "output_text")
+      .map(item => item.text)
+      .join("\n");
+    if (!outputText) return json({ error: "AI returned no analysis" }, 502);
+    const raw = outputText.replace(/^```json\s*|\s*```$/g, "").trim();
     const analysis = JSON.parse(raw);
     return json({ ...analysis, estimated: true });
   } catch (error) {
