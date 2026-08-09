@@ -50,6 +50,37 @@ const state=JSON.parse(localStorage.getItem('nb-release')||'{"goal":2000,"protei
     $('planList').innerHTML='<b>今天吃什麼</b>'+plan.map((item,i)=>'<div class="meal"><div class="emoji">'+item.icon+'</div><div class="name"><b>'+item.meal+' · '+item.main+'</b><small>搭配：'+item.drink+' · '+calories[i]+' kcal · 蛋白質 '+protein[i]+'g</small></div></div>').join('')+'<div class="metric"><span>今日建議合計</span><b>'+calories.reduce((a,b)=>a+b,0).toLocaleString()+' kcal · '+protein.reduce((a,b)=>a+b,0)+'g 蛋白質</b></div>';
     if(planVersion>1) toast('已依你的每日目標更新三餐與飲品。');
   }
+  const twoWeekMeals=[
+    ['🥣|希臘優格蛋白燕麥杯|無糖豆漿','🥙|雞胸藜麥蔬菜捲|無糖烏龍茶','🐟|鮭魚糙米蔬菜盤|檸檬氣泡水'],
+    ['🍳|酪梨雞蛋全麥吐司|高蛋白鮮奶','🍛|豆腐鷹嘴豆咖哩飯|無糖綠茶','🍜|味噌雞肉烏龍麵|無糖麥茶'],
+    ['🍓|莓果優格堅果碗|無糖拿鐵','🍱|照燒鮭魚餐盒|冷泡茶','🥘|火雞肉蔬菜燉飯|無糖豆漿'],
+    ['🥞|香蕉花生蛋白鬆餅|美式咖啡','🍚|椒麻雞糙米便當|無糖紅茶','🍲|番茄牛肉蔬菜湯麵|氣泡水'],
+    ['🍠|地瓜雞蛋沙拉|無糖豆漿','🥗|鮪魚全麥義大利麵沙拉|烏龍茶','🍗|香草烤雞胸與馬鈴薯|檸檬水'],
+    ['🥪|起司蛋白質三明治|美式咖啡','🍤|蝦仁藜麥餐盒|無糖綠茶','🍛|雞肉蔬菜咖哩飯|無糖麥茶'],
+    ['🍌|香蕉燕麥蛋白果昔碗|無糖鮮奶','🥟|韭菜雞肉水餃套餐|無糖茶','🐠|清蒸鱸魚與紫米飯|薑片茶'],
+    ['🍙|鮭魚飯糰與茶葉蛋|無糖豆漿','🥘|番茄牛肉藜麥碗|氣泡水','🍝|蒜香雞肉全麥義大利麵|無糖紅茶'],
+    ['🥚|蔬菜歐姆蛋與吐司|美式咖啡','🌯|墨西哥雞肉捲餅碗|無糖綠茶','🍲|豆腐鮮菇雞肉鍋|無糖麥茶'],
+    ['🫐|藍莓優格奇亞籽杯|無糖拿鐵','🍚|日式照燒豆腐便當|冷泡茶','🐟|香煎鯖魚地瓜盤|檸檬水'],
+    ['🥯|鮪魚蛋貝果|高蛋白鮮奶','🥗|雞胸凱薩沙拉與全麥麵包|氣泡水','🍜|韓式牛肉豆腐鍋飯|無糖茶'],
+    ['🍳|番茄起司炒蛋吐司|美式咖啡','🍛|泰式打拋雞糙米飯|無糖綠茶','🥘|鮭魚蔬菜燉飯|無糖豆漿'],
+    ['🥣|花生香蕉隔夜燕麥|無糖豆漿','🥙|烤雞肉沙威瑪碗|烏龍茶','🍗|蒜香雞腿排與時蔬|檸檬氣泡水'],
+    ['🍓|草莓蛋白優格杯|無糖拿鐵','🍱|牛肉彩椒藜麥餐盒|無糖紅茶','🍲|味噌鮭魚豆腐湯定食|無糖麥茶']
+  ];
+  function generatePlan(){
+    const shares=[.28,.38,.34];
+    const calories=shares.map(share=>Math.round(state.goal*share/10)*10);
+    const protein=shares.map(share=>Math.round(state.protein*share));
+    const mealNames=['早餐','午餐','晚餐'];
+    const start=planVersion++%twoWeekMeals.length;
+    document.querySelector('#plan .title h2').textContent='14 日餐食建議';
+    $('planFocus').textContent='14 天三餐規劃 · 依你的每日目標分配';
+    $('planTarget').textContent='每天約 '+state.goal.toLocaleString()+' kcal · 蛋白質 '+state.protein+'g；每餐含主食與搭配飲品。';
+    $('planList').innerHTML=twoWeekMeals.map((day,index)=>{
+      const meals=twoWeekMeals[(index+start)%twoWeekMeals.length];
+      return '<details class="card" '+(index===0?'open':'')+'><summary><b>第 '+(index+1)+' 天</b><small class="muted"> · '+state.goal.toLocaleString()+' kcal · '+state.protein+'g 蛋白質</small></summary>'+meals.map((value,mealIndex)=>{const [icon,main,drink]=value.split('|');return '<div class="meal"><div class="emoji">'+icon+'</div><div class="name"><b>'+mealNames[mealIndex]+' · '+main+'</b><small>搭配：'+drink+' · '+calories[mealIndex]+' kcal · 蛋白質 '+protein[mealIndex]+'g</small></div></div>';}).join('')+'</details>';
+    }).join('');
+    if(planVersion>1)toast('已重新安排 14 天三餐與搭配飲品。');
+  }
   function saveGoal(event){
     event.preventDefault();
     state.goal=Number($('goalCalories').value);
