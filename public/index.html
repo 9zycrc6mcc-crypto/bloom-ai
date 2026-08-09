@@ -208,7 +208,7 @@ const state=JSON.parse(localStorage.getItem('nb-release')||'{"goal":2000,"protei
     const email=document.getElementById('authEmail').value.trim(),password=document.getElementById('authPassword').value;
     if(!email||!password){authMessage.textContent='請輸入電子郵件與密碼。';return;}
     authSubmit.disabled=true;authSubmit.textContent='處理中…';authMessage.textContent='';
-    try{if(authMode==='signup')await createUserWithEmailAndPassword(auth,email,password);else await signInWithEmailAndPassword(auth,email,password);}catch(error){const codes={"auth/invalid-credential":"帳號或密碼不正確。","auth/email-already-in-use":"此電子郵件已建立帳戶。","auth/weak-password":"密碼至少需要 6 個字元。","auth/invalid-email":"請輸入有效的電子郵件。"};authMessage.textContent=codes[error.code]||'登入失敗，請稍後再試。';authSubmit.disabled=false;authSubmit.textContent=authMode==='signup'?'建立帳戶':'登入';}
+    try{if(authMode==='signup'){sessionStorage.setItem('bloom-new-signup','1');const credential=await createUserWithEmailAndPassword(auth,email,password);localStorage.setItem('bloom-profile-required-'+credential.user.uid,'1');}else await signInWithEmailAndPassword(auth,email,password);}catch(error){sessionStorage.removeItem('bloom-new-signup');const codes={"auth/invalid-credential":"帳號或密碼不正確。","auth/email-already-in-use":"此電子郵件已建立帳戶。","auth/weak-password":"密碼至少需要 6 個字元。","auth/invalid-email":"請輸入有效的電子郵件。"};authMessage.textContent=codes[error.code]||'登入失敗，請稍後再試。';authSubmit.disabled=false;authSubmit.textContent=authMode==='signup'?'建立帳戶':'登入';}
   };
   function applyProfile(user){
     const height=Number(document.getElementById('profileHeight').value),weight=Number(document.getElementById('profileWeight').value);
@@ -219,6 +219,8 @@ const state=JSON.parse(localStorage.getItem('nb-release')||'{"goal":2000,"protei
     state.goal=calories;state.profile={height,weight,bmi:Math.round(bmi*10)/10};
     persist();render();generatePlan();
     localStorage.setItem('bloom-profile-'+user.uid,JSON.stringify(state.profile));
+    localStorage.removeItem('bloom-profile-required-'+user.uid);
+    sessionStorage.removeItem('bloom-new-signup');
     profileGate.style.display='none';
     toast('已設定每日 '+calories.toLocaleString()+' kcal 的熱量參考目標。');
   }
@@ -266,6 +268,7 @@ const state=JSON.parse(localStorage.getItem('nb-release')||'{"goal":2000,"protei
     window.loadAccountData(user);
     const accountCard=document.querySelector('#account article.card');
     if(accountCard){accountCard.querySelector('b').textContent=user.email||'Bloom 用戶';accountCard.querySelector('p').textContent='已登入 · 餐點紀錄目前儲存在此裝置';addAvatarControl(user,accountCard);if(!document.getElementById('logoutButton')){const logoutButton=document.createElement('button');logoutButton.id='logoutButton';logoutButton.className='tiny';logoutButton.textContent='登出';logoutButton.onclick=()=>signOut(auth);accountCard.append(logoutButton);}}
-    if(!localStorage.getItem('bloom-profile-'+user.uid)){profileGate.style.display='grid';return;}
+    if(sessionStorage.getItem('bloom-new-signup'))localStorage.setItem('bloom-profile-required-'+user.uid,'1');
+    if(localStorage.getItem('bloom-profile-required-'+user.uid)&&!localStorage.getItem('bloom-profile-'+user.uid)){profileGate.style.display='grid';return;}
   });
 </script></body></html>
