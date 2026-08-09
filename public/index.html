@@ -193,6 +193,7 @@ const state=JSON.parse(localStorage.getItem('nb-release')||'{"goal":2000,"protei
   applyDiaryFilter=()=>renderDiaryForDate();
   const datedOpenAdd=openAdd;openAdd=function(mode){datedOpenAdd(mode);foodDate.value=window.selectedDiaryDate||todayDate();};
   saveMeal=function(){const name=$('foodName').value.trim(),kcal=Number($('foodKcal').value);if(!name||!kcal){toast('請輸入食物名稱與熱量。');return;}const photo=window.pendingMealPhoto;const emoji=photo?'<img src="'+photo+'" alt="餐點照片" style="width:100%;height:100%;object-fit:cover;border-radius:13px">':'🥗';const date=foodDate.value||todayDate();const protein=Number(window.pendingMealProtein)||0;state.meals.push({name,kcal,protein,emoji,photo,category:window.selectedMealCategory||'breakfast',date});window.pendingMealPhoto=null;window.pendingMealProtein=0;render();$('addModal').close();$('foodName').value='';$('foodKcal').value='';window.selectedDiaryDate=date;renderDiaryForDate();toast('已加入 '+diaryDateText(date)+' 的日誌。');};
+  const addLogButton=document.querySelector('#addModal > .modal > .buttons .primary');if(addLogButton){addLogButton.type='button';addLogButton.onclick=event=>{event.preventDefault();saveMeal();};}
   const caloriesOn=date=>state.meals.filter(meal=>(meal.date||todayDate())===date).reduce((sum,meal)=>sum+Number(meal.kcal||0),0);
   const proteinOn=date=>state.meals.filter(meal=>(meal.date||todayDate())===date).reduce((sum,meal)=>sum+Number(meal.protein||0),0);
   function waterTarget(){const weight=Number(state.profile?.weight)||60;return Math.max(1500,Math.round((weight*30)/500)*500);}
